@@ -1,0 +1,13 @@
+Block all access to the .env file
+
+<Files .env>
+Order allow,deny
+Deny from all
+</Files>
+
+Block all access to files inside the backend folder
+
+<Directory backend>
+Order allow,deny
+Deny from all
+</Directory>

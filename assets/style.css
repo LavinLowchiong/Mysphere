@@ -1,0 +1,26 @@
+/* * public_html/assets/style.css
+ * Custom CSS for layout fixes or specific component styling not handled by Tailwind.
+ */
+
+/* Style for the main content area to prevent content break on small screens */
+body {
+    background-color: #f7f7f7;
+    min-height: 100vh;
+}
+
+/* Custom styling for the blog content area to make raw Markdown/HTML look cleaner */
+.blog-content h1 {
+    @apply text-3xl font-bold mt-6 mb-4 border-b pb-2;
+}
+.blog-content h2 {
+    @apply text-2xl font-semibold mt-4 mb-3;
+}
+.blog-content p {
+    @apply text-gray-700 leading-relaxed mb-4;
+}
+.blog-content ul {
+    @apply list-disc list-inside ml-4 mb-4;
+}
+.blog-content blockquote {
+    @apply border-l-4 border-indigo-500 pl-4 py-1 italic text-gray-600;
+}
