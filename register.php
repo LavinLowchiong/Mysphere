@@ -1,27 +1,47 @@
 <?php
 // public_html/register.php - Registration Form
 
-// Load authentication handler
 require_once __DIR__ . '/backend/auth_handler.php';
+session_start();
 
-// The auth_handler.php file processes the POST request.
-// If registration is successful, it sets a success message and redirects to login.php.
-
-// If already logged in, redirect to index
+// Redirect if already logged in
 if (is_authenticated()) {
     header("Location: /index.php");
     exit();
 }
+
+// Handle registration POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'register') {
+    global $pdo;
+
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    if (register_user($pdo, $username, $email, $password)) {
+        // Successful → redirect to login
+        header("Location: /login.php");
+        exit();
+    } else {
+        // Failed → repopulate form fields
+        $_SESSION['old'] = [
+            'username' => $username,
+            'email' => $email
+        ];
+    }
+}
+
+// Get old form values if available
+$old = $_SESSION['old'] ?? [];
+unset($_SESSION['old']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register | Blog App</title>
-    <!-- Load Tailwind CSS from CDN -->
+    <title>Register | MyShpere</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Use Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -41,6 +61,7 @@ if (is_authenticated()) {
                 <div>
                     <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
                     <input type="text" id="username" name="username" required
+                           value="<?php echo htmlspecialchars($old['username'] ?? ''); ?>"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
                            placeholder="Choose a username">
                 </div>
@@ -48,6 +69,7 @@ if (is_authenticated()) {
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                     <input type="email" id="email" name="email" required
+                           value="<?php echo htmlspecialchars($old['email'] ?? ''); ?>"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
                            placeholder="you@example.com">
                 </div>
@@ -70,6 +92,11 @@ if (is_authenticated()) {
                     Already have an account? 
                     <a href="/login.php" class="font-medium text-indigo-600 hover:text-indigo-500 transition duration-150">
                         Log in here
+                    </a>
+                </p>
+                <p class="mt-2">
+                    <a href="/index.php" class="text-gray-500 hover:text-gray-700 transition duration-150">
+                        &larr; Back to Home
                     </a>
                 </p>
             </div>

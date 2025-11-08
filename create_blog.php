@@ -56,7 +56,7 @@ $button_text = 'Publish Post';
         <div class="bg-white p-6 rounded-xl shadow-lg">
             
             <!-- Form submits to the blog_handler.php for processing -->
-            <form action="/../backend/blog_handler.php" method="POST" class="space-y-6">
+            <form action="/backend/blog_handler.php" method="POST" class="space-y-6">
                 <input type="hidden" name="action" value="<?php echo htmlspecialchars($blog['form_action']); ?>">
                 <!-- No blog_id needed for creation -->
 

@@ -1,34 +1,59 @@
-// public_html/assets/script.js
+// assets/script.js
 
 /**
  * ==========================================================
  * Markdown Editor Initialization (using EasyMDE)
  * ==========================================================
- * This script runs after the document loads and targets the 
- * 'content' textarea on the create_blog.php and edit_blog.php pages.
- * * NOTE: The necessary EasyMDE library and CSS are loaded directly 
- * in the HTML headers of the PHP files.
+ * Initializes EasyMDE on pages with a <textarea id="content">.
+ * Automatically syncs content to the textarea on submit.
+ * Handles CDN load delays gracefully.
  */
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if the content textarea exists (it will on create_blog.php and edit_blog.php)
-    const contentEditor = document.getElementById('content');
 
-    if (contentEditor && typeof EasyMDE !== 'undefined') {
-        try {
-            // Initialize the EasyMDE editor instance
-            const easyMDE = new EasyMDE({
-                element: contentEditor,
-                spellChecker: false, // Turn off for cleaner input
-                toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "guide"],
-                status: false,
-                forceSync: true, // Ensure textarea is updated on form submit
-            });
-            console.log("EasyMDE initialized on content field.");
+document.addEventListener("DOMContentLoaded", function() {
+    const contentEditor = document.getElementById("content");
+    if (!contentEditor) return; // No editor field found on this page
 
-        } catch (e) {
-            console.error("Error initializing EasyMDE:", e);
+    // Poll until EasyMDE is loaded (for slow CDN load)
+    const waitForMDE = setInterval(() => {
+        if (typeof EasyMDE !== "undefined") {
+            clearInterval(waitForMDE);
+
+            try {
+                const easyMDE = new EasyMDE({
+                    element: contentEditor,
+                    spellChecker: false,
+                    toolbar: [
+                        "bold", "italic", "heading", "|",
+                        "quote", "unordered-list", "ordered-list", "|",
+                        "link", "image", "|", "guide"
+                    ],
+                    status: false,
+                    forceSync: true,
+                });
+
+                console.info("EasyMDE initialized successfully.");
+            } catch (err) {
+                console.error("Error initializing EasyMDE:", err);
+                showEditorFallback();
+            }
         }
+    }, 300);
+
+    // Fallback: notify user if EasyMDE never loads
+    setTimeout(() => {
+        if (typeof EasyMDE === "undefined") {
+            clearInterval(waitForMDE);
+            showEditorFallback();
+        }
+    }, 5000);
+
+    // Display a small message to user if editor fails
+    function showEditorFallback() {
+        const notice = document.createElement("p");
+        notice.textContent = "⚠️ Markdown editor failed to load. Plain text mode enabled.";
+        notice.style.color = "#b91c1c";
+        notice.style.fontSize = "0.9rem";
+        contentEditor.parentNode.insertBefore(notice, contentEditor);
+        contentEditor.style.display = "block";
     }
 });
-
-// You can add other client-side logic here, like AJAX functions or client-side form validation.

@@ -1,110 +1,91 @@
 <?php
-// public_html/index.php
+// public_html/index.php - Home / Blog List Page
 
-// Load the session and database handlers
-// OLD PATH: require_once __DIR__ . '/../backend/auth_handler.php';
-// OLD PATH: require_once __DIR__ . '/../backend/blog_handler.php';
-//
-// NEW PATH (Fixed):
 require_once __DIR__ . '/backend/auth_handler.php';
 require_once __DIR__ . '/backend/blog_handler.php';
+require_once __DIR__ . '/backend/config.php'; // for $pdo
 
-// Get the database connection
-$pdo = get_pdo_connection();
-
-// Fetch all blog posts
-$posts = get_all_posts($pdo);
-
+// Fetch all blogs
+$blogs = get_all_blogs($pdo);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Blog Home</title>
-    <!-- Load Tailwind CSS -->
+    <title>MyShpere - Home</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Optional: Load custom CSS -->
-    <link rel="stylesheet" href="/assets/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+<body class="bg-gray-50 min-h-screen">
 
-    <!-- Navigation -->
-    <nav class="bg-white p-4 shadow-md sticky top-0 z-10">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold text-gray-800">MyBlog</a>
-            <div class="flex space-x-4">
-                <?php if (is_authenticated()): ?>
-                    <a href="create_blog.php" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-300">+ New Post</a>
-                    <form action="login.php" method="POST" class="inline">
-                        <input type="hidden" name="action" value="logout">
-                        <button type="submit" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-300">Logout</button>
-                    </form>
-                <?php else: ?>
-                    <a href="login.php" class="text-gray-600 hover:text-gray-800">Login</a>
-                    <a href="register.php" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-300">Register</a>
-                <?php endif; ?>
-            </div>
+    <!-- Navbar -->
+    <?php
+    // Include the navbar with login/logout functionality
+    ?>
+    <header class="bg-indigo-600 shadow-md">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <a href="/index.php" class="text-2xl font-bold text-white tracking-wider">MyShpere</a>
+        <div class="flex items-center space-x-4">
+            <?php if (is_authenticated()): ?>
+                <a href="/create_blog.php" 
+                   class="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded transition duration-150 font-medium">
+                    Create Blog
+                </a>
+                <span class="text-white font-medium">Hi, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                <a href="/logout.php" 
+                   class="text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded transition duration-150 font-medium">
+                    Logout
+                </a>
+            <?php else: ?>
+                <a href="/login.php" 
+                   class="text-white hover:text-indigo-200 transition duration-150 font-medium">
+                    Login
+                </a>
+                <a href="/register.php" 
+                   class="text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded transition duration-150 font-medium">
+                    Register
+                </a>
+            <?php endif; ?>
         </div>
     </nav>
+</header>
 
-    <!-- Main Content -->
-    <div class="container mx-auto max-w-6xl mt-8 px-4">
-
-        <!-- Session Message -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <?php display_session_message(); ?>
 
-        <!-- Blog Post Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            
-            <?php if (empty($posts)): ?>
-                <div class="col-span-full text-center text-gray-500">
-                    <h2 class="text-2xl">No blog posts found.</h2>
-                    <p class="mt-2">Why don't you <a href="create_blog.php" class="text-blue-600 hover:underline">create one</a>?</p>
-                </div>
-            <?php else: ?>
-                <?php foreach ($posts as $post): ?>
-                    <!-- Blog Card -->
-                    <div class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform duration-300 hover:scale-105">
-                        <div class="p-6">
-                            <!-- Post Meta -->
-                            <div class="mb-4">
-                                <span class="text-sm text-gray-500"><?php echo htmlspecialchars($post['author_username']); ?></span>
-                                <span class="text-sm text-gray-500">&middot;</span>
-                                <span class="text-sm text-gray-500"><?php echo (new DateTime($post['created_at']))->format('F j, Y'); ?></span>
-                            </div>
-                            
-                            <!-- Title -->
-                            <h2 class="text-2xl font-bold text-gray-900 mb-2">
-                                <a href="view_blog.php?id=<?php echo $post['id']; ?>" class="hover:text-blue-600">
-                                    <?php echo htmlspecialchars($post['title']); ?>
-                                </a>
-                            </h2>
-                            
-                            <!-- Content Preview -->
-                            <p class="text-gray-700 mb-4">
-                                <!-- Create a simple text preview (e.g., first 150 chars) -->
-                                <?php echo htmlspecialchars(substr(strip_tags($post['content']), 0, 150)) . '...'; ?>
-                            </p>
-                            
-                            <!-- Read More Link -->
-                            <a href="view_blog.php?id=<?php echo $post['id']; ?>" class="text-blue-600 hover:text-blue-800 font-medium transition duration-300">
-                                Read More &rarr;
+        <h1 class="text-4xl font-bold text-gray-800 mb-8">Latest Blogs</h1>
+
+        <div class="space-y-6">
+            <?php if (!empty($blogs)): ?>
+                <?php foreach ($blogs as $blog): ?>
+                    <?php
+                        $content_preview = isset($blog['content']) ? strip_tags($blog['content']) : '';
+                        if (strlen($content_preview) > 250) {
+                            $content_preview = substr($content_preview, 0, 250) . '...';
+                        }
+                        $author = $blog['author'] ?? 'Unknown';
+                    ?>
+                    <article class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition duration-200">
+                        <h2 class="text-2xl font-semibold text-gray-900 mb-2">
+                            <a href="/view_blog.php?id=<?php echo $blog['id']; ?>" class="hover:text-indigo-600">
+                                <?php echo htmlspecialchars($blog['title'] ?? 'Untitled'); ?>
                             </a>
+                        </h2>
+                        <div class="text-sm text-gray-500 mb-4">
+                            By: <?php echo htmlspecialchars($author); ?> | Published: <?php echo date('M d, Y', strtotime($blog['created_at'])); ?>
                         </div>
-                    </div>
+                        <p class="text-gray-700"><?php echo htmlspecialchars($content_preview); ?></p>
+                    </article>
                 <?php endforeach; ?>
+            <?php else: ?>
+                <p class="text-gray-600">No blogs have been posted yet.</p>
             <?php endif; ?>
-
         </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="bg-white shadow-inner mt-12 py-6">
-        <div class="container mx-auto text-center">
-            <p class="text-gray-500 text-sm">&copy; <?php echo date('Y'); ?> MyBlog. All rights reserved.</p>
-        </div>
-    </footer>
+    </main>
 
 </body>
 </html>

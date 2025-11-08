@@ -1,34 +1,40 @@
 <?php
 // backend/auth_handler.php
 
+// Start session if not already started
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Load database connection
 require_once __DIR__ . '/config.php';
 
 /**
  * =============================
- * SESSION & AUTHENTICATION UTILS
+ * SESSION & AUTHENTICATION HELPERS
  * =============================
  */
 
-// Check if a user is logged in
+/**
+ * Check if a user is logged in
+ * @return bool
+ */
 function is_authenticated(): bool {
     return isset($_SESSION['user_id']);
 }
 
-// Get the currently logged-in user's ID
+/**
+ * Get current user ID
+ * @return int|null
+ */
 function get_current_user_id(): ?int {
     return is_authenticated() ? (int)$_SESSION['user_id'] : null;
 }
 
-// Get the currently logged-in user's username
-function get_current_username(): ?string {
-    return $_SESSION['username'] ?? null;
-}
-
-// Enforce login for pages requiring authentication
+/**
+ * Require login for pages
+ * @param string $redirect_to
+ */
 function require_login(string $redirect_to = '/login.php'): void {
     if (!is_authenticated()) {
         $_SESSION['message'] = ['type' => 'error', 'text' => 'You must be logged in to access this page.'];
@@ -37,23 +43,20 @@ function require_login(string $redirect_to = '/login.php'): void {
     }
 }
 
-// Display any session messages and then remove them
+/**
+ * Display session messages
+ */
 function display_session_message(): void {
     if (isset($_SESSION['message'])) {
         $msg = $_SESSION['message'];
         $type = $msg['type'];
         $text = htmlspecialchars($msg['text']);
 
-        switch ($type) {
-            case 'success':
-                $class = 'bg-green-100 border-green-400 text-green-700';
-                break;
-            case 'error':
-                $class = 'bg-red-100 border-red-400 text-red-700';
-                break;
-            default:
-                $class = 'bg-blue-100 border-blue-400 text-blue-700';
-        }
+        $class = match($type) {
+            'success' => 'bg-green-100 border-green-400 text-green-700',
+            'error' => 'bg-red-100 border-red-400 text-red-700',
+            default => 'bg-blue-100 border-blue-400 text-blue-700',
+        };
 
         echo "<div class='message p-4 mb-4 rounded-lg text-center border {$class} transition duration-300'>";
         echo $text;
@@ -70,25 +73,23 @@ function display_session_message(): void {
  */
 function register_user(PDO $pdo, string $username, string $email, string $password): bool {
     try {
-        // Password length validation
+        // Validate password length
         if (strlen($password) < 6) {
             $_SESSION['message'] = ['type' => 'error', 'text' => 'Password must be at least 6 characters long.'];
             return false;
         }
 
-        // Check if username or email already exists
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM `user` WHERE username = ? OR email = ?");
+        // Check for duplicate username or email
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM user WHERE username = ? OR email = ?");
         $stmt->execute([$username, $email]);
         if ($stmt->fetchColumn() > 0) {
-            $_SESSION['message'] = ['type' => 'error', 'text' => 'Username or Email already taken.'];
+            $_SESSION['message'] = ['type' => 'error', 'text' => 'Username or email already taken.'];
             return false;
         }
 
-        // Hash the password
+        // Hash password and insert new user
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-        // Insert new user
-        $stmt = $pdo->prepare("INSERT INTO `user` (username, email, password) VALUES (?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO user (username, email, password) VALUES (?, ?, ?)");
         $stmt->execute([$username, $email, $hashed_password]);
 
         $_SESSION['message'] = ['type' => 'success', 'text' => 'Registration successful! You can now log in.'];
@@ -106,22 +107,20 @@ function register_user(PDO $pdo, string $username, string $email, string $passwo
  * USER LOGIN
  * =============================
  */
-function login_user(PDO $pdo, string $username_or_email, string $password): bool {
+function login_user(PDO $pdo, string $username, string $password): bool {
     try {
-        // Fetch user by username or email
-        $stmt = $pdo->prepare("SELECT * FROM `user` WHERE username = ? OR email = ?");
-        $stmt->execute([$username_or_email, $username_or_email]);
+        $stmt = $pdo->prepare("SELECT id, password FROM user WHERE username = ?");
+        $stmt->execute([$username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$user || !password_verify($password, $user['password'])) {
-            $_SESSION['message'] = ['type' => 'error', 'text' => 'Invalid username/email or password.'];
+            $_SESSION['message'] = ['type' => 'error', 'text' => 'Invalid username or password.'];
             return false;
         }
 
-        // Successful login → set session
+        // Set session
         $_SESSION['user_id'] = (int)$user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['message'] = ['type' => 'success', 'text' => 'Login successful! Welcome back.'];
+        $_SESSION['username'] = $username;
 
         return true;
 
@@ -134,19 +133,14 @@ function login_user(PDO $pdo, string $username_or_email, string $password): bool
 
 /**
  * =============================
- * USER LOGOUT
+ * LOGOUT FUNCTIONALITY
  * =============================
  */
 function logout_user(): void {
-    $_SESSION = [];
-    if (ini_get("session.use_cookies")) {
-        $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000,
-            $params["path"], $params["domain"],
-            $params["secure"], $params["httponly"]
-        );
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
     }
+    $_SESSION = [];
     session_destroy();
 }
 
-?>

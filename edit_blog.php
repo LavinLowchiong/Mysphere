@@ -14,7 +14,7 @@ $blog_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 // Check for valid ID and fetch the blog post
 global $pdo;
-if (!$blog_id || !($blog = get_single_blog($pdo, $blog_id))) {
+if (!$blog_id || !($blog = get_blog_by_id($pdo, $blog_id))) {
     $_SESSION['message'] = ['type' => 'error', 'text' => 'Blog post not found or invalid ID.'];
     header("Location: /index.php");
     exit();
@@ -66,7 +66,7 @@ $button_text = 'Save Changes';
         <div class="bg-white p-6 rounded-xl shadow-lg">
             
             <!-- Form submits to the blog_handler.php for update processing -->
-            <form action="/../backend/blog_handler.php" method="POST" class="space-y-6">
+            <form action="/backend/blog_handler.php" method="POST" class="space-y-6">
                 <input type="hidden" name="action" value="update">
                 <input type="hidden" name="blog_id" value="<?php echo htmlspecialchars($blog['id']); ?>">
 
